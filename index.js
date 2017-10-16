@@ -1,16 +1,51 @@
+import chalk from 'chalk';
 import fs from 'fs';
 import selenium from 'selenium-standalone';
 import winston from 'winston';
 import wd from 'wd';
 
+import ArgumentsParser from './src/arguments-parser';
+
+const args = ArgumentsParser.parse(process.argv.slice(2));
+
 winston.configure({
     transports: [
-        new winston.transports.Console({
+        new winston.transports.Console({ 
             colorize: true,
             level: 'info'
         })
     ]
 });
+
+if (args.verbose) {
+    winston.configure({
+        transports: [
+            new winston.transports.Console({ 
+                colorize: true,
+                level: 'verbose'
+            })
+        ]
+    });
+}
+
+if (args.debug) {
+    winston.configure({
+        transports: [
+            new winston.transports.Console({ 
+                colorize: true,
+                level: 'debug'
+            })
+        ]
+    });
+}
+
+if (args.silent) {
+    winston.configure({
+        transports: []
+    });
+}
+
+winston.verbose(`${chalk.green('Parsed args')} ${JSON.stringify(args, null, '\t')}`);
 
 const seleniumConfig = {
     version: '3.5.3',
@@ -25,9 +60,9 @@ const seleniumConfig = {
 }
 
 selenium.install(Object.assign({}, seleniumConfig, {
-    logger: winston.verbose,
+    logger: winston.debug,
     progressCb: (totalLength, progressLength, chunkLength) => {
-        winston.info(totalLength, progressLength, chunkLength)
+        winston.verbose(totalLength, progressLength, chunkLength)
     }
 }), (error) => {
     if (error) {
@@ -43,33 +78,27 @@ selenium.install(Object.assign({}, seleniumConfig, {
             process.exit();
         }
 
-        winston.info(child.port);
-
         child.stderr.on('data', function (data) {
-            winston.verbose(`Selenium:data >  ${data.toString()}`);
+            winston.debug(`Selenium:data >  ${data.toString()}`);
         });
 
         const browser = wd.remote()
 
         browser.on('status', (info) => {
-            winston.verbose(`Browser:status >  ${info}`);
+            winston.debug(`Browser:status >  ${info}`);
           });
         browser.on('command', (eventType, command, response) => {
-            winston.verbose(`Browser:command > ${eventType} ${command} ${response || ''}`);
+            winston.debug(`Browser:command > ${eventType} ${command} ${response || ''}`);
           });
         browser.on('http', (method, path, data) => {
-            winston.verbose(`Browser:http > ${method} ${path} ${data || ''}`);
+            winston.debug(`Browser:http > ${method} ${path} ${data || ''}`);
         });
 
         browser.init({
             browserName: 'chrome',
             chromeOptions: {
                 perfLoggingPrefs: {
-                    traceCategories: [
-                        'devtools.timeline',
-                        'disabled-by-default-devtools.timeline.frame',
-                        'rail',
-                    ].join(',')
+                    traceCategories: args['trace-categories']
                 },
                 args: [
                     '--disable-background-networking',
@@ -83,30 +112,32 @@ selenium.install(Object.assign({}, seleniumConfig, {
                 performance: 'ALL'
             }
         }, () => {
-            browser.get('http://localhost', () => {
-                browser.log('performance', (error, data) => {
-                    if(error) {
-                        winston.error(error);
-                    }
-                    
-                    const logs = data.map((entry) => {
-                        return JSON.parse(entry.message).message.params;
-                    });
-
-                    fs.writeFile('trace.json', JSON.stringify(logs, null, '\t'), (error) => {
+            browser.get(args.url, () => {
+                setTimeout(() => {
+                    browser.log('performance', (error, data) => {
                         if(error) {
                             winston.error(error);
                         }
-
-                        browser.quit((error) => {
+                        
+                        const logs = data.map((entry) => {
+                            return JSON.parse(entry.message).message.params;
+                        });
+    
+                        fs.writeFile(args['output-filename'], JSON.stringify(logs, null, '\t'), (error) => {
                             if(error) {
                                 winston.error(error);
                             }
-
-                            child.kill();
+    
+                            browser.quit((error) => {
+                                if(error) {
+                                    winston.error(error);
+                                }
+    
+                                child.kill();
+                            });
                         });
                     });
-                });
+                }, args.duration);
             });
         });
     });
