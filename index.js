@@ -59,6 +59,7 @@ const seleniumConfig = {
     }
 }
 
+winston.info(chalk.green('Installing selenium'));
 selenium.install(Object.assign({}, seleniumConfig, {
     logger: winston.debug,
     progressCb: (totalLength, progressLength, chunkLength) => {
@@ -66,34 +67,36 @@ selenium.install(Object.assign({}, seleniumConfig, {
     }
 }), (error) => {
     if (error) {
-        winston.error(error);
+        winston.error(chalk.red(error));
 
         process.exit();
     }
 
+    winston.info(chalk.green('Starting selenium'));
     selenium.start(seleniumConfig, (error, child) => {
         if (error) {
-            winston.error(error);
+            winston.error(chalk.red(error));
 
             process.exit();
         }
 
         child.stderr.on('data', function (data) {
-            winston.debug(`Selenium:data >  ${data.toString()}`);
+            winston.debug(`${chalk.blue('Selenium:data >')} ${data.toString()}`);
         });
 
         const browser = wd.remote()
 
         browser.on('status', (info) => {
-            winston.debug(`Browser:status >  ${info}`);
+            winston.debug(`${chalk.blue('Browser:status >')} ${info}`);
           });
         browser.on('command', (eventType, command, response) => {
-            winston.debug(`Browser:command > ${eventType} ${command} ${response || ''}`);
+            winston.debug(`${chalk.blue('Browser:command >')} ${eventType} ${command} ${response || ''}`);
           });
         browser.on('http', (method, path, data) => {
-            winston.debug(`Browser:http > ${method} ${path} ${data || ''}`);
+            winston.debug(`${chalk.blue('Browser:http >')} ${method} ${path} ${data || ''}`);
         });
 
+        winston.info(chalk.green('Initializing browser'));
         browser.init({
             browserName: 'chrome',
             chromeOptions: {
@@ -112,27 +115,33 @@ selenium.install(Object.assign({}, seleniumConfig, {
                 performance: 'ALL'
             }
         }, () => {
+            winston.info(chalk.green(`Starting browsing ${args.url}`));
             browser.get(args.url, () => {
+                winston.info(chalk.green(`Waiting ${args.duration}ms`));
                 setTimeout(() => {
+                    winston.info(chalk.green('Dumping performance logs'));
                     browser.log('performance', (error, data) => {
                         if(error) {
-                            winston.error(error);
+                            winston.error(chalk.red(error));
                         }
                         
                         const logs = data.map((entry) => {
                             return JSON.parse(entry.message).message.params;
                         });
     
+                        winston.info(chalk.green(`Writing performance logs to ${args['output-filename']}`));
                         fs.writeFile(args['output-filename'], JSON.stringify(logs, null, '\t'), (error) => {
                             if(error) {
-                                winston.error(error);
+                                winston.error(chalk.red(error));
                             }
     
+                            winston.info(chalk.green('Quitting browser'));
                             browser.quit((error) => {
                                 if(error) {
-                                    winston.error(error);
+                                    winston.error(chalk.red(error));
                                 }
     
+                                winston.info(chalk.green('Killing selenium'));
                                 child.kill();
                             });
                         });

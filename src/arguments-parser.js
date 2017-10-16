@@ -1,4 +1,6 @@
+import chalk from 'chalk';
 import minimist from 'minimist';
+import winston from 'winston';
 
 const DEFAULT_DURATION = 5000;
 
@@ -15,7 +17,12 @@ class ArgumentsParser {
                 'verbose': false
             }
         });
-        
+
+        if(args.url === '') {
+            winston.error(chalk.red('Url must be provided e.g. --url="http://example.org"'));
+            process.exit();
+        }
+
         return args;
     }
 }
