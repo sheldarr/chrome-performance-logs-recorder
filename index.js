@@ -123,49 +123,52 @@ selenium.install(Object.assign({}, seleniumConfig, {
             browser.get(args.url, () => {
                 winston.info(chalk.green(`Setting to local storage ${key}:${value}`));
                 browser.setLocalStorageKey(key, value, () => {
-                    winston.info(chalk.green(`Waiting ${args.duration}ms`));
-                    setTimeout(() => {
-                        winston.info(chalk.green('Dumping performance logs'));
-                        browser.log('performance', (error, data) => {
-                            if (error) {
-                                winston.error(chalk.red(error));
-                            }
-    
-                            const eventNamesWhitelist = args['filter-event-names']
-                                .split(',')
-                                .filter((eventName) => {
-                                    return eventName !== '';
-                                });
-                            const events = data
-                                .map((entry) => {
-                                    return JSON.parse(entry.message).message.params;
-                                })
-                                .filter((event) => {
-                                    if (eventNamesWhitelist.length === 0) {
-                                        return true;
-                                    }
-    
-                                    return eventNamesWhitelist.includes(event.name)
-                                });
-    
-                            winston.info(chalk.green(`Writing performance logs to ${args['output-filename']}`));
-                            fs.writeFile(args['output-filename'], JSON.stringify(events, null, '\t'), (error) => {
+                    winston.info(chalk.green(`Refreshing page`))
+                    browser.refresh(() => {
+                        winston.info(chalk.green(`Waiting ${args.duration}ms`));
+                        setTimeout(() => {
+                            winston.info(chalk.green('Dumping performance logs'));
+                            browser.log('performance', (error, data) => {
                                 if (error) {
                                     winston.error(chalk.red(error));
                                 }
-    
-                                winston.info(chalk.green('Quitting browser'));
-                                browser.quit((error) => {
+        
+                                const eventNamesWhitelist = args['filter-event-names']
+                                    .split(',')
+                                    .filter((eventName) => {
+                                        return eventName !== '';
+                                    });
+                                const events = data
+                                    .map((entry) => {
+                                        return JSON.parse(entry.message).message.params;
+                                    })
+                                    .filter((event) => {
+                                        if (eventNamesWhitelist.length === 0) {
+                                            return true;
+                                        }
+        
+                                        return eventNamesWhitelist.includes(event.name)
+                                    });
+        
+                                winston.info(chalk.green(`Writing performance logs to ${args['output-filename']}`));
+                                fs.writeFile(args['output-filename'], JSON.stringify(events, null, '\t'), (error) => {
                                     if (error) {
                                         winston.error(chalk.red(error));
                                     }
-    
-                                    winston.info(chalk.green('Killing selenium'));
-                                    child.kill();
+        
+                                    winston.info(chalk.green('Quitting browser'));
+                                    browser.quit((error) => {
+                                        if (error) {
+                                            winston.error(chalk.red(error));
+                                        }
+        
+                                        winston.info(chalk.green('Killing selenium'));
+                                        child.kill();
+                                    });
                                 });
                             });
-                        });
-                    }, args.duration);
+                        }, args.duration);
+                    });
                 });
             });
         });
