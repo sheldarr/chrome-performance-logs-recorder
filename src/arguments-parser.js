@@ -11,6 +11,7 @@ class ArgumentsParser {
                 debug: false,
                 duration: DEFAULT_DURATION,
                 'filter-event-names': '',
+                'local-storage': 'key:value',
                 'output-filename': 'trace.json',
                 silent: false,
                 'trace-categories': 'devtools.timeline,disabled-by-default-devtools.timeline.frame,rail',
