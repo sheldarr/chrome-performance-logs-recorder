@@ -13,6 +13,7 @@ After specified duration it dumps performance logs and writes them to json file.
 
 * `--debug` (default `false`) - enabled debug output
 * `--duration` (default `5000`) - duration of logs gathering in ms
+* `--filter-event-names` (default `''`) - comma separated event names to filter for
 * `--output-filename` (default `'trace.json'`) - filename where recorded trace will be written
 * `--silent` (default `false`) - disables output to console
 * `--trace-categories` (default `'devtools.timeline,disabled-by-default-devtools.timeline.frame,rail'`) - comma separated trace categories

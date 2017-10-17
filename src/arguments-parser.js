@@ -10,6 +10,7 @@ class ArgumentsParser {
             default: {
                 debug: false,
                 duration: DEFAULT_DURATION,
+                'filter-event-names': '',
                 'output-filename': 'trace.json',
                 silent: false,
                 'trace-categories': 'devtools.timeline,disabled-by-default-devtools.timeline.frame,rail',
@@ -18,7 +19,7 @@ class ArgumentsParser {
             }
         });
 
-        if(args.url === '') {
+        if (args.url === '') {
             winston.error(chalk.red('Url must be provided e.g. --url="http://example.org"'));
             process.exit();
         }

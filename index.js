@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import fs from 'fs';
 import selenium from 'selenium-standalone';
-import winston from 'winston';
 import wd from 'wd';
+import winston from 'winston';
 
 import ArgumentsParser from './src/arguments-parser';
 
@@ -10,7 +10,7 @@ const args = ArgumentsParser.parse(process.argv.slice(2));
 
 winston.configure({
     transports: [
-        new winston.transports.Console({ 
+        new winston.transports.Console({
             colorize: true,
             level: 'info'
         })
@@ -20,7 +20,7 @@ winston.configure({
 if (args.verbose) {
     winston.configure({
         transports: [
-            new winston.transports.Console({ 
+            new winston.transports.Console({
                 colorize: true,
                 level: 'verbose'
             })
@@ -31,7 +31,7 @@ if (args.verbose) {
 if (args.debug) {
     winston.configure({
         transports: [
-            new winston.transports.Console({ 
+            new winston.transports.Console({
                 colorize: true,
                 level: 'debug'
             })
@@ -88,10 +88,10 @@ selenium.install(Object.assign({}, seleniumConfig, {
 
         browser.on('status', (info) => {
             winston.debug(`${chalk.blue('Browser:status >')} ${info}`);
-          });
+        });
         browser.on('command', (eventType, command, response) => {
             winston.debug(`${chalk.blue('Browser:command >')} ${eventType} ${command} ${response || ''}`);
-          });
+        });
         browser.on('http', (method, path, data) => {
             winston.debug(`${chalk.blue('Browser:http >')} ${method} ${path} ${data || ''}`);
         });
@@ -121,26 +121,39 @@ selenium.install(Object.assign({}, seleniumConfig, {
                 setTimeout(() => {
                     winston.info(chalk.green('Dumping performance logs'));
                     browser.log('performance', (error, data) => {
-                        if(error) {
+                        if (error) {
                             winston.error(chalk.red(error));
                         }
-                        
-                        const logs = data.map((entry) => {
-                            return JSON.parse(entry.message).message.params;
-                        });
-    
+
+                        const eventNamesWhitelist = args['filter-event-names']
+                            .split(',')
+                            .filter((eventName) => {
+                                return eventName !== '';
+                            });
+                        const events = data
+                            .map((entry) => {
+                                return JSON.parse(entry.message).message.params;
+                            })
+                            .filter((event) => {
+                                if (eventNamesWhitelist.length === 0) {
+                                    return true;
+                                }
+
+                                return eventNamesWhitelist.includes(event.name)
+                            });
+
                         winston.info(chalk.green(`Writing performance logs to ${args['output-filename']}`));
-                        fs.writeFile(args['output-filename'], JSON.stringify(logs, null, '\t'), (error) => {
-                            if(error) {
+                        fs.writeFile(args['output-filename'], JSON.stringify(events, null, '\t'), (error) => {
+                            if (error) {
                                 winston.error(chalk.red(error));
                             }
-    
+
                             winston.info(chalk.green('Quitting browser'));
                             browser.quit((error) => {
-                                if(error) {
+                                if (error) {
                                     winston.error(chalk.red(error));
                                 }
-    
+
                                 winston.info(chalk.green('Killing selenium'));
                                 child.kill();
                             });
