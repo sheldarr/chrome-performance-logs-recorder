@@ -18,6 +18,7 @@ After specified duration it dumps performance logs and writes them to json file.
 * `--output-filename` (default `'trace.json'`) - filename where recorded trace will be written
 * `--silent` (default `false`) - disables output to console
 * `--trace-categories` (default `'devtools.timeline,disabled-by-default-devtools.timeline.frame,rail'`) - comma separated trace categories
+* `--trim` (default=`0`) - removes specified % of events (half of the value at the beginning and half at the end)
 * `--url` (default `''`) - url of page for which logs will be recorded
 * `--verbose` (default `false`) - enables verbose output
 

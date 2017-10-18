@@ -15,6 +15,7 @@ class ArgumentsParser {
                 'output-filename': 'trace.json',
                 silent: false,
                 'trace-categories': 'devtools.timeline,disabled-by-default-devtools.timeline.frame,rail',
+                'trim': '0',
                 'url': '',
                 'verbose': false
             }
@@ -22,6 +23,11 @@ class ArgumentsParser {
 
         if (args.url === '') {
             winston.error(chalk.red('Url must be provided e.g. --url="http://example.org"'));
+            process.exit();
+        }
+
+        if (args.trim < 0 || args.trim > 100) {
+            winston.error(chalk.red('trim value must be between 0 and 100'));
             process.exit();
         }
 

@@ -149,7 +149,13 @@ selenium.install(Object.assign({}, seleniumConfig, {
         
                                         return eventNamesWhitelist.includes(event.name)
                                     });
-        
+                                const trimPercentage = args.trim / 100;
+
+                                const eventsToTrim = Math.floor(events.length * trimPercentage / 2);
+                                winston.info(`${chalk.green('Trimming')} ${chalk.cyan(trimPercentage)}${chalk.cyan('%')}${chalk.green('(')}${chalk.cyan(eventsToTrim)}${chalk.green(') of events (half of the value at the beginning and half at the end)')}`);
+                                events.splice(0, eventsToTrim);
+                                events.splice(events.length - eventsToTrim, eventsToTrim);
+
                                 winston.info(chalk.green(`Writing performance logs to ${args['output-filename']}`));
                                 fs.writeFile(args['output-filename'], JSON.stringify(events, null, '\t'), (error) => {
                                     if (error) {
